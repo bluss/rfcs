@@ -39,11 +39,17 @@ slice; a reduction to simpler and more efficient pieces.
 
 [prfold]: https://github.com/rust-lang/rust/pull/37315
 
+Other data structures with segmented memory layout [can benefit][rulinalg] the
+same way as `VecDeque`.
+
+[rulinalg]: https://github.com/AtheMathmo/rulinalg/issues/86
+
 Iterators can be composed together; `a.chain(b)` creates a new iterator that
 is the concatenation of `a` and `b`. Chain is already implementing
 `Iterator::find` to first run find on the first iterator, then the second.
 This is explicitly unraveling the nested structure, instead of going through
-Chain's own `next` method.
+Chain's own `next` method; with `fold_while` it only needs to define this
+once instead of for each of the searching and folding methods.
 
 ## Why Composable
 
