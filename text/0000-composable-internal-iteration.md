@@ -6,9 +6,11 @@
 # Summary
 [summary]: #summary
 
-Add iterator methods `fold_while` and `rfold_while` and generalize the existing
-methods `all`, `any`, `find`, `position`, `fold` and `rposition` methods.
-
+Add iterator methods `fold_while` and `rfold_while` that generalize the existing
+methods `all`, `any`, `find`, `position`, `fold` and `rposition` methods. Iterators
+can provide a specific traversal implementation only once. Iterators can also
+provide `rfold_while` to have the same benefit available through their reversed
+version as well.
 
 # Motivation
 [motivation]: #motivation
@@ -122,6 +124,25 @@ macro_rules! fold_while {
 }
 ```
 
+
++ Iterator methods `all`, `any`, `find`, `position`, `fold` are all have their
+default implementation changed to use `fold_while`.
+
++ Iterator method `rposition` changes its default implementation to use `rfold_while`.
+
++ The `Rev` adaptor changes its iterator methods to make use of `fold_while` and
+`rfold_while` on the base iterator when possible. This enables implementation
+specific improvements to be reachable through the reversed iterator.
+
++ The `Iterator for &mut I` blanket implementation will gain a specialization
+for the `I: Sized` case (when that is possible) and it will forward
+the fold while methods, and will implement `fold` by calling `fold_while` on `I`.
+This makes an implementation specific `fold_while` reachable from `&mut I` even
+when a specific `fold` was not (because `fold` uses a `self` receiver).
+
+
+## Example: Chain
+
 This is the implementation of `.fold_while` for `Chain`, which explains
 the use of the `fold_while!` macro.
 
@@ -145,23 +166,6 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
     FoldWhile::Continue(accum)
 }
 ```
-
-
-
-+ Iterator methods `all`, `any`, `find`, `position`, `fold` are all have their
-default implementation changed to use `fold_while`.
-
-+ Iterator method `rposition` changes its default implementation to use `rfold_while`.
-
-+ The `Rev` adaptor changes its iterator methods to make use of `fold_while` and
-`rfold_while` on the base iterator when possible. This enables implementation
-specific improvements to be reachable through the reversed iterator.
-
-+ The `Iterator for &mut I` blanket implementation will gain a specialization
-for the `I: Sized` case (when that is possible) and it will forward
-the fold while methods, and will implement `fold` by calling `fold_while` on `I`.
-This makes an implementation specific `fold_while` reachable from `&mut I` even
-when a specific `fold` was not (because `fold` uses a `self` receiver).
 
 # Drawbacks
 [drawbacks]: #drawbacks
