@@ -230,6 +230,17 @@ to `iter.find()` would also apply to `iter.rev().find()`.
      rigid control flow of fold while, and it does not give us the broader
      benefits of access to improved versions through reversed iterators.
 
+- Add three methods intead of two:
+
+  + `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
+  + `search_while<Res, G>(&mut self, default: Res, g: G) -> SearchWhile<Res>`
+    and corresponding `rsearch_while` method.
+    Control enum: `enum SearchWhile<T> { Done(T), Continue }`. Control flow is
+    simpler.
+  + Each of the methods is simpler to implement, but it increases the burden
+    from one (two) methods to two (four), going from `fold_while` (`rfold_while`)
+    to `fold` and `search_while` (`rfold`, `rsearch_while`).
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
