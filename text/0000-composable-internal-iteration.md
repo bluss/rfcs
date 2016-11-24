@@ -193,9 +193,10 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
 
 ## Example: Slice Iterator
 
-[][prslice] tunes the implementations of `Iterator::find` and similar methods
-for the slice iterators in particular. With this PR, only the methods
-`fold_while` and `rfold_while` need to be implemented.
+[PR 37972][prslice] tunes the implementations of `Iterator::find` and similar
+methods for the slice iterators in particular. With this RFC, only the methods
+`fold_while` and `rfold_while` need to be implemented instead, and the benefit
+to `iter.find()` would also apply to `iter.rev().find()`.
 
 [prslice]: https://github.com/rust-lang/rust/pull/37972
 
