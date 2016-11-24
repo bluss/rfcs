@@ -15,17 +15,20 @@ methods improved through their reversed iterator as well.
 # Motivation
 [motivation]: #motivation
 
-*External* iteration puts the consumer in control, and this is the usual Rust
-model based around the iterator's `.next()` method. *Internal* iteration
-inverts control and the iterator “pushes” the elements to the consumer. This
-is used by the already listed searching or folding iterator methods.
+*External* iteration has the consumer control when the next iterator element is
+consumed, and this is the usual Rust model based around the iterator's
+`.next()` method.
+*Internal* iteration inverts control and the iterator “pushes” the elements to
+the consumer. This is already used by the searching or folding iterator methods
+(`all` and the others).
 
 `fold_while` and `rfold_while` allow iterators to special case just one (or two)
 iterator methods, and having all the listed iterator methods gain from that
 implementation by default.
 
 The existance of both forward and reverse methods mean that reversed iterators
-(the `Rev` adaptor) can use the improved implementations as well.
+(the `Rev` adaptor) can use the improved implementations as well, so that
+`iter.rev().find()` can be as efficient as `iter.find()` is.
 
 ## Why Internal Iteration
 
@@ -147,9 +150,8 @@ applicable.
 
 ## Example: Chain
 
-This is the implementation of `.fold_while` for `Chain`, which explains
-the use of the `fold_while!` macro and shows the need of returning the
-`FoldWhile` enum for composability.
+This is the implementation of `.fold_while` for `Chain`, which shows the need
+for returning the `FoldWhile` enum for composability.
 
 ```rust
 // helper macro for fold_while's control flow (internal use only)
@@ -223,3 +225,4 @@ for the slice iterators in particular. With this PR, only the methods
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+- Do the benefits through `Rev<I>` materialize? Has not been implemented yet.
