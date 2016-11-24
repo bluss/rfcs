@@ -176,6 +176,7 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
     }
     match self.state {
         ChainState::Both | ChainState::Back => {
+            self.state = ChainState::Back;
             accum = fold_while!(self.b.fold_while(accum, &mut g));
         }
         _ => { }
