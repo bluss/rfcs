@@ -149,7 +149,7 @@ when a specific `fold` was not (because `fold` uses a `self` receiver).
 + Iterator documentation will recommend providing a implementation specific
 `fold_while` and `rfold_while` in favor of any of the methods that use it
 (while of course not insisting on such implementations, most iterators don't
-need this power).
+need to implement them).
 
 + The iterator adaptors will forward `fold_while` and `rfold_while` if
 applicable.
