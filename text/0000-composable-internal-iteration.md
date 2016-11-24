@@ -51,9 +51,9 @@ This design means that the user can't accidentally forget to handle control flow
 # Detailed design
 [design]: #detailed-design
 
-This is the bulk of the RFC. Explain the design in enough detail for somebody familiar
-with the language to understand, and for somebody familiar with the compiler to implement.
-This should get into specifics and corner-cases, and include examples of how the feature is used.
++ `Iterator` gains a new method `fold_while` with a provided implementation.
+  `DoubleEndedIterator` gains a new method `rfold_while` with a provided
+  implementation.  The two implementations are listed below.
 
 ```rust
 pub trait Iterator {
@@ -126,24 +126,24 @@ This is the implementation of `.fold_while` for `Chain`, which explains
 the use of the `fold_while!` macro.
 
 ```rust
-    fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
-        where G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
-    {
-        let mut accum = init;
-        match self.state {
-            ChainState::Both | ChainState::Front => {
-                accum = fold_while!(self.a.fold_while(accum, &mut g));
-            }
-            _ => { }
+fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
+    where G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
+{
+    let mut accum = init;
+    match self.state {
+        ChainState::Both | ChainState::Front => {
+            accum = fold_while!(self.a.fold_while(accum, &mut g));
         }
-        match self.state {
-            ChainState::Both | ChainState::Back => {
-                accum = fold_while!(self.b.fold_while(accum, &mut g));
-            }
-            _ => { }
-        }
-        FoldWhile::Continue(accum)
+        _ => { }
     }
+    match self.state {
+        ChainState::Both | ChainState::Back => {
+            accum = fold_while!(self.b.fold_while(accum, &mut g));
+        }
+        _ => { }
+    }
+    FoldWhile::Continue(accum)
+}
 ```
 
 
@@ -183,6 +183,11 @@ when a specific `fold` was not (because `fold` uses a `self` receiver).
      to do so, but anyway.)
   2. `fold` is general but not short circuiting. It covers many use cases
      on its own, though (sum, min, max, and more).
+  3. Strictly, `Iterator::all` already implements general internal iteration,
+     but ownership rules make it very awkward to use for searching or folding
+     with the result value in as a captured variable, it does not have the
+     rigid control flow of fold while, and it does not give us the broader
+     benefits of access to improved versions through reversed iterators.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
