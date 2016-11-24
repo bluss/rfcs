@@ -57,19 +57,19 @@ This should get into specifics and corner-cases, and include examples of how the
 
 ```rust
 pub trait Iterator {
+    /// Starting with initial accumulator `init`, combine the accumulator
+    /// with each iterator element using the `g` closure, until it returns
+    /// `FoldWhile::Done` or the iterator's end is reached. The last `FoldWhile`
+    /// value is returned.
     fn fold_while<Acc, G>(&mut self, init: Acc, g: G) -> FoldWhile<Acc>
         where Self: Sized,
-              G: FnMut(Acc, $elem) -> FoldWhile<Acc>
+              G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
     {
         let mut accum = init;
         while let Some(element) = self.next() {
             match g(accum, element) {
-                FoldWhile::Continue(res) => {
-                    accum = res;
-                }
-                done @ FoldWhile::Done(_) => {
-                    return done;
-                }
+                FoldWhile::Continue(res) => accum = res,
+                done @ FoldWhile::Done(_) => return done,
             }
         }
         FoldWhile::Continue(accum)
@@ -79,17 +79,13 @@ pub trait Iterator {
 pub trait DoubleEndedIterator {
     fn rfold_while<Acc, G>(&mut self, init: Acc, g: G) -> FoldWhile<Acc>
         where Self: Sized,
-              G: FnMut(Acc, $elem) -> FoldWhile<Acc>
+              G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
     {
         let mut accum = init;
         while let Some(element) = self.next_back() {
             match g(accum, element) {
-                FoldWhile::Continue(res) => {
-                    accum = res;
-                }
-                done @ FoldWhile::Done(_) => {
-                    return done;
-                }
+                FoldWhile::Continue(res) => accum = res,
+                done @ FoldWhile::Done(_) => return done,
             }
         }
         FoldWhile::Continue(accum)
