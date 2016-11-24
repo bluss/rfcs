@@ -225,4 +225,5 @@ for the slice iterators in particular. With this PR, only the methods
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-- Do the benefits through `Rev<I>` materialize? Has not been implemented yet.
+- Do the benefits to reversed iterators (`Rev<I>`) materialize? Has not been
+  implemented yet.
