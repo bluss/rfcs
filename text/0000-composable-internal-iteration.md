@@ -8,9 +8,9 @@
 
 Add iterator methods `fold_while` and `rfold_while` that generalize the existing
 methods `all`, `any`, `find`, `position`, `fold` and `rposition` methods. Iterators
-can provide a specific traversal implementation only once. Iterators can also
-provide `rfold_while` to have the same search and fold methods improved
-through their reversed version as well.
+can provide one specific traversal implementation for all of them. Iterators
+can additionally implement `rfold_while` to have the same search and fold
+methods improved through their reversed iterator as well.
 
 # Motivation
 [motivation]: #motivation
@@ -137,6 +137,13 @@ the fold while methods, and will implement `fold` by calling `fold_while` on `I`
 This makes an implementation specific `fold_while` reachable from `&mut I` even
 when a specific `fold` was not (because `fold` uses a `self` receiver).
 
++ Iterator documentation will recommend providing a implementation specific
+`fold_while` and `rfold_while` in favor of any of the methods that use it
+(while of course not insisting on such implementations, most iterators don't
+need this power).
+
++ The iterator adaptors will forward `fold_while` and `rfold_while` if
+applicable.
 
 ## Example: Chain
 
