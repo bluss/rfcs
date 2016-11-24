@@ -31,12 +31,12 @@ The existance of both forward and reverse methods mean that reversed iterators
 
 When the iterator is in control, it can unravel its nested structure directly.
 An example of this is [PR #37315][prfold]. In internal iteration, traversing
-the VecDeque means splitting it into two slices, then a for loop over each
-slice.
+the `VecDeque` means splitting it into two slices, then a for loop over each
+slice; a reduction to simpler and more efficient pieces.
 
 [prfold]: https://github.com/rust-lang/rust/pull/37315
 
-Iterators can be composed together. `a.chain(b)` creates a new iterator that
+Iterators can be composed together; `a.chain(b)` creates a new iterator that
 is the concatenation of `a` and `b`. Chain is already implementing
 `Iterator::find` to first run find on the first iterator, then the second.
 This is explicitly unraveling the nested structure, instead of going through
@@ -46,9 +46,6 @@ Chain's own `next` method.
 
 The fold while methods should be self-composable so that it is easy for
 composite iterators like `chain` and `flat_map` to use them.
-
-The control enum `FoldWhile` holds the value field inside both of its variants.
-This design means that the user can't accidentally forget to handle control flow.
 
 # Detailed design
 [design]: #detailed-design
@@ -60,9 +57,9 @@ This design means that the user can't accidentally forget to handle control flow
 ```rust
 pub trait Iterator {
     /// Starting with initial accumulator `init`, combine the accumulator
-    /// with each iterator element using the `g` closure, until it returns
-    /// `FoldWhile::Done` or the iterator's end is reached. The last `FoldWhile`
-    /// value is returned.
+    /// with each iterator element using the `g` closure until it returns
+    /// `FoldWhile::Done` or the iterator's end is reached.
+    /// The last `FoldWhile` value is returned.
     fn fold_while<Acc, G>(&mut self, init: Acc, g: G) -> FoldWhile<Acc>
         where Self: Sized,
               G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
@@ -94,7 +91,12 @@ pub trait DoubleEndedIterator {
     }
 }
 
+```
 
+The control enum `FoldWhile` holds the value field inside both of its variants.
+This design means that the user can't accidentally forget to handle control flow.
+
+```rust
 /// An enum used for controlling the execution of `.fold_while()`.
 pub enum FoldWhile<T> {
     /// Continue folding with this value
@@ -113,15 +115,6 @@ impl<T> FoldWhile<T> {
     }
 }
 
-// helper macro for fold_while's control flow (internal use only)
-macro_rules! fold_while {
-    ($e:expr) => {
-        match $e {
-            FoldWhile::Continue(t) => t,
-            done @ FoldWhile::Done(_) => return done,
-        }
-    }
-}
 ```
 
 
@@ -144,9 +137,20 @@ when a specific `fold` was not (because `fold` uses a `self` receiver).
 ## Example: Chain
 
 This is the implementation of `.fold_while` for `Chain`, which explains
-the use of the `fold_while!` macro.
+the use of the `fold_while!` macro and shows the need of returning the
+`FoldWhile` enum for composability.
 
 ```rust
+// helper macro for fold_while's control flow (internal use only)
+macro_rules! fold_while {
+    ($e:expr) => {
+        match $e {
+            FoldWhile::Continue(t) => t,
+            done @ FoldWhile::Done(_) => return done,
+        }
+    }
+}
+
 fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
     where G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
 {
@@ -167,6 +171,14 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
 }
 ```
 
+## Example: Slice Iterator
+
+[][prslice] tunes the implementations of `Iterator::find` and similar methods
+for the slice iterators in particular. With this PR, only the methods
+`fold_while` and `rfold_while` need to be implemented.
+
+[prslice]: https://github.com/rust-lang/rust/pull/37972
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -174,6 +186,10 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
   the iterator's parts.
 - Adding new methods to `Iterator` and `DoubleEndedIterator` will clash with
   other iterator extension traits that users may have.
+- `fold` is much simpler to implement because it consumes the iterator (`self`
+  receiver) and doesn't need to save any partial state.
+  Implementations can choose to just define `fold` instead if that is
+  enough for them, however.
 
 # Alternatives
 [alternatives]: #alternatives
