@@ -9,8 +9,8 @@
 Add iterator methods `fold_while` and `rfold_while` that generalize the existing
 methods `all`, `any`, `find`, `position`, `fold` and `rposition` methods. Iterators
 can provide a specific traversal implementation only once. Iterators can also
-provide `rfold_while` to have the same benefit available through their reversed
-version as well.
+provide `rfold_while` to have the same search and fold methods improved
+through their reversed version as well.
 
 # Motivation
 [motivation]: #motivation
@@ -56,11 +56,14 @@ composite iterators like `chain` and `flat_map` to use them.
 
 ```rust
 pub trait Iterator {
+    type Item;
+    fn next(&mut self) -> Option<Self::Item> { unimplemented!() }
+    
     /// Starting with initial accumulator `init`, combine the accumulator
     /// with each iterator element using the `g` closure until it returns
     /// `FoldWhile::Done` or the iterator's end is reached.
     /// The last `FoldWhile` value is returned.
-    fn fold_while<Acc, G>(&mut self, init: Acc, g: G) -> FoldWhile<Acc>
+    fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
         where Self: Sized,
               G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
     {
@@ -75,8 +78,10 @@ pub trait Iterator {
     }
 }
 
-pub trait DoubleEndedIterator {
-    fn rfold_while<Acc, G>(&mut self, init: Acc, g: G) -> FoldWhile<Acc>
+pub trait DoubleEndedIterator : Iterator {
+    fn next_back(&mut self) -> Option<Self::Item> { unimplemented!() }
+    
+    fn rfold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
         where Self: Sized,
               G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
     {
@@ -90,7 +95,6 @@ pub trait DoubleEndedIterator {
         FoldWhile::Continue(accum)
     }
 }
-
 ```
 
 The control enum `FoldWhile` holds the value field inside both of its variants.
