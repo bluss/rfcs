@@ -6,11 +6,11 @@
 # Summary
 [summary]: #summary
 
-Add iterator methods `fold_while` and `rfold_while` that generalize the existing
-methods `all`, `any`, `find`, `position`, `fold` and `rposition` methods. Iterators
-can provide one specific traversal implementation for all of them. Iterators
-can additionally implement `rfold_while` to have the same search and fold
-methods improved through their reversed iterator as well.
+Add the iterator method `fold_while` that generalizes the existing methods
+`all`, `any`, `find`, `position` and `fold` methods. Iterators can provide one
+specific traversal implementation for all of them. Iterators can additionally
+implement `rfold_while` to have the same search and fold methods improved
+through their reversed iterator as well.
 
 # Motivation
 [motivation]: #motivation
