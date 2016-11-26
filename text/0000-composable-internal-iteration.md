@@ -258,3 +258,5 @@ Instead of introducing a new enum, `Result` can be used instead.
 
 - Do the benefits to reversed iterators (`Rev<I>`) materialize? Has not been
   implemented yet.
+- Should the helper macro `fold_while!()` be public? Once macro namespacing
+  exists, I think it should be exported.
