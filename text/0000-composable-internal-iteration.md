@@ -3,6 +3,8 @@
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
 
+**DRAFT**
+
 # Summary
 [summary]: #summary
 
@@ -215,6 +217,8 @@ to `iter.find()` would also apply to `iter.rev().find()`.
 # Alternatives
 [alternatives]: #alternatives
 
+## Using an existing method like `.all()`
+
 - None of the existing iterator methods can be made into the “canonical” one
   to override that all the other methods
 
@@ -230,7 +234,15 @@ to `iter.find()` would also apply to `iter.rev().find()`.
      rigid control flow of fold while, and it does not give us the broader
      benefits of access to improved versions through reversed iterators.
 
-- Add three methods intead of two:
+## Use `Result<T, T>` instead of `FoldWhile<T>`
+
+Instead of introducing a new enum, `Result` can be used instead.
+
+- It has the drawback of overloading the semantics of `Result` (it would use
+  `Ok` for “continue” and `Err(x)` for “done”).
+- Advantage: It can use existing `try!()` or `?` for control flow.
+
+## Add three methods intead of two:
 
   + `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
   + `search_while<Res, G>(&mut self, default: Res, g: G) -> SearchWhile<Res>`
