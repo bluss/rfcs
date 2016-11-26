@@ -234,13 +234,15 @@ to `iter.find()` would also apply to `iter.rev().find()`.
      rigid control flow of fold while, and it does not give us the broader
      benefits of access to improved versions through reversed iterators.
 
-## Use `Result<T, T>` instead of `FoldWhile<T>`
+## Use `Result<T, E>` instead of `FoldWhile<T>`
 
 Instead of introducing a new enum, `Result` can be used instead.
 
-- It has the drawback of overloading the semantics of `Result` (it would use
-  `Ok` for “continue” and `Err(x)` for “done”).
+- Drawback: Overloading the semantics of `Result` (it would use
+  `Ok` for “continue” and `Err` for “done”).
+- Drawback: Breaking for a successfully found element is signalled using `Err`.
 - Advantage: It can use existing `try!()` or `?` for control flow.
+- Advantage: Integrates well with fallible operations
 
 ## Add three methods intead of two:
 
