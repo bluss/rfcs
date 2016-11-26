@@ -138,6 +138,9 @@ default implementation changed to use `fold_while`.
 
 + Iterator method `rposition` changes its default implementation to use `rfold_while`.
 
++ sum and product already use `fold`, and all the max and min functions should
+  change their default implementations to use `fold`.
+
 + The `Rev` adaptor changes its iterator methods to make use of `fold_while` and
 `rfold_while` on the base iterator when possible. This enables implementation
 specific improvements to be reachable through the reversed iterator.
