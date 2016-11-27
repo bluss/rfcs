@@ -249,11 +249,11 @@ Instead of introducing a new enum, `Result` can be used instead.
 
 ## Add three methods instead of two:
 
-+ `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
-+ and `search_while<Res, G>(&mut self, default: Res, g: G) -> SearchWhile<Res>`
-  and corresponding `rsearch_while` method.
-  Control enum: `enum SearchWhile<T> { Done(T), Continue }`. Control flow is
-  simpler.
+Add `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
+And add `search_while<Res, G>(&mut self, default: Res, g: G) ->
+SearchWhile<Res>` and corresponding `rsearch_while` method.  Control enum:
+`enum SearchWhile<T> { Done(T), Continue }`. Control flow is simpler.
+
 + Advantage: Each of the methods is simpler to implement
 + Drawback: it increases the implementation burden from one (two) methods to
   two (four), going from `fold_while` (`rfold_while`) to `fold` and
