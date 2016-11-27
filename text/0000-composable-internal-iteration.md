@@ -234,8 +234,9 @@ to `iter.find()` would also apply to `iter.rev().find()`.
   3. Strictly, `Iterator::all` already implements general internal iteration,
      but ownership rules make it very awkward to use for searching or folding
      with the result value in as a captured variable, it does not have the
-     rigid control flow of fold while, and it does not give us the broader
-     benefits of access to improved versions through reversed iterators.
+     rigid control flow of fold while, and it does not alone give us the
+     broader benefits of access to improved versions through reversed
+     iterators.
 
 ## Use `Result<T, T>` instead of `FoldWhile<T>`
 
@@ -246,10 +247,10 @@ Instead of introducing a new enum, `Result` can be used instead.
 - Drawback: Breaking for a successfully found element is signalled using `Err`.
 - Advantage: It can use existing `try!()` or `?` for control flow.
 
-## Add three methods intead of two:
+## Add three methods instead of two:
 
 + `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
-+ `search_while<Res, G>(&mut self, default: Res, g: G) -> SearchWhile<Res>`
++ and `search_while<Res, G>(&mut self, default: Res, g: G) -> SearchWhile<Res>`
   and corresponding `rsearch_while` method.
   Control enum: `enum SearchWhile<T> { Done(T), Continue }`. Control flow is
   simpler.
@@ -259,6 +260,7 @@ Instead of introducing a new enum, `Result` can be used instead.
   `search_while` (`rfold`, `rsearch_while`).
 + Advantage: You may want manual unrolling for searches (`find`), but a plain
   loop for unconditional `fold`
++ Drawback: Losing `fold_while` loses a useful iterator method in itself.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
