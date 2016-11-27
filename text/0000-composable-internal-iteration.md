@@ -28,7 +28,7 @@ the consumer. This is already used by the searching or folding iterator methods
 iterator methods, and having all the listed iterator methods gain from that
 implementation by default.
 
-The existance of both forward and reverse methods mean that reversed iterators
+The existence of both forward and reverse methods mean that reversed iterators
 (the `Rev` adaptor) can use the improved implementations as well, so that
 `iter.rev().find()` can be as efficient as `iter.find()` is.
 
