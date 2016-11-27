@@ -9,7 +9,7 @@
 [summary]: #summary
 
 Add the iterator method `fold_while` that generalizes the existing methods
-`all`, `any`, `find`, `position` and `fold` methods. Iterators can provide one
+`all`, `any`, `find`, `position` and `fold`. Iterators can provide one
 specific traversal implementation for all of them. Iterators can additionally
 implement `rfold_while` to have the same search and fold methods improved
 through their reversed iterator as well.
@@ -25,8 +25,7 @@ the consumer. This is already used by the searching or folding iterator methods
 (`all` and the others).
 
 `fold_while` and `rfold_while` allow iterators to special case just one (or two)
-iterator methods, and having all the listed iterator methods gain from that
-implementation by default.
+iterator methods, and having very many iterator methods gain from that by default.
 
 The existence of both forward and reverse methods mean that reversed iterators
 (the `Rev` adaptor) can use the improved implementations as well, so that
