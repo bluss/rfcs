@@ -162,6 +162,26 @@ fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
 }
 ```
 
+## Example: all
+
+
+How `Iterator::all` can be implemented in terms of `fold_ok`.
+
+
+```rust
+fn all<F>(&mut self, mut predicate: F) -> bool
+    where F: FnMut(Self::Item) -> bool,
+{
+    self.fold_ok(true, move |_, elt| {
+        if predicate(elt) {
+            Ok(true)
+        } else {
+            Err(false)
+        }
+    }).unwrap_or_else(|e| e)
+}
+```
+
 ## Example: Slice Iterator
 
 [PR 37972][prslice] tunes the implementations of `Iterator::find` and similar
@@ -171,7 +191,7 @@ to `iter.find()` would also apply to `iter.rev().find()`.
 
 [prslice]: https://github.com/rust-lang/rust/pull/37972
 
-## Example: Take Adaptor
+## Example: Take
 
 
 ```rust
