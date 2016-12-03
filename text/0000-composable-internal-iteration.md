@@ -347,3 +347,5 @@ macro_rules! fold_while {
 
 - Are there any existing `fold_ok`, `rfold_ok` methods that extend `Iterator`
   in the common Rust ecosystem?
+- Should the more specific method `rfold` exist (corresponding to `fold`) exist
+  as well, regardless?
