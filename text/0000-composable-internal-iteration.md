@@ -1,4 +1,4 @@
-- Feature Name: `fold_while`
+- Feature Name: `fold_ok`
 - Start Date: 2016-11-24
 - RFC PR: (leave this empty)
 - Rust Issue: (leave this empty)
@@ -8,10 +8,10 @@
 # Summary
 [summary]: #summary
 
-Add the iterator method `fold_while` that generalizes the existing methods
+Add the iterator method `fold_ok` that generalizes the existing methods
 `all`, `any`, `find`, `position` and `fold`. Iterators can provide one
 specific traversal implementation for all of them. Iterators can additionally
-implement `rfold_while` to have the same search and fold methods improved
+implement `rfold_ok` to have the same search and fold methods improved
 through their reversed iterator as well.
 
 # Motivation
@@ -24,7 +24,7 @@ consumed, and this is the usual Rust model based around the iterator's
 the consumer. This is already used by the searching or folding iterator methods
 (`all` and the others).
 
-`fold_while` and `rfold_while` allow iterators to special case just one (or two)
+`fold_ok` and `rfold_ok` allow iterators to special case just one (or two)
 iterator methods, and having very many iterator methods gain from that by default.
 
 The existence of both forward and reverse methods mean that reversed iterators
@@ -49,7 +49,7 @@ Iterators can be composed together; `a.chain(b)` creates a new iterator that
 is the concatenation of `a` and `b`. Chain is already implementing
 `Iterator::find` to first run find on the first iterator, then the second.
 This is explicitly unraveling the nested structure, instead of going through
-Chain's own `next` method; with `fold_while` it only needs to define this
+Chain's own `next` method; with `fold_ok` it only needs to define this
 once instead of for each of the searching and folding methods.
 
 ## Why Composable
@@ -60,49 +60,43 @@ composite iterators like `chain` and `flat_map` to use them.
 # Detailed design
 [design]: #detailed-design
 
-+ `Iterator` gains a new method `fold_while` with a provided implementation.
-  `DoubleEndedIterator` gains a new method `rfold_while` with a provided
++ `Iterator` gains a new method `fold_ok` with a provided implementation.
+  `DoubleEndedIterator` gains a new method `rfold_ok` with a provided
   implementation.  The two implementations are listed below.
 
 ```rust
 pub trait Iterator {
     type Item;
-    fn next(&mut self) -> Option<Self::Item> { unimplemented!() }
+    fn next(&mut self) -> Option<Self::Item>;
     
     /// Starting with initial accumulator `init`, combine the accumulator
-    /// with each iterator element using the `g` closure until it returns
-    /// `FoldWhile::Done` or the iterator's end is reached.
-    /// The last `FoldWhile` value is returned.
-    fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
+    /// with each iterator element using the closure `g` until it returns
+    /// `Err` or the iterator’s end is reached.
+    /// The last `Result` value is returned.
+    fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
         where Self: Sized,
-              G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
+              G: FnMut(Acc, Self::Item) -> Result<Acc, E>
     {
         let mut accum = init;
-        while let Some(element) = self.next() {
-            match g(accum, element) {
-                FoldWhile::Continue(res) => accum = res,
-                done @ FoldWhile::Done(_) => return done,
-            }
+        while let Some(elt) = self.next() {
+            accum = g(accum, elt)?;
         }
-        FoldWhile::Continue(accum)
+        Ok(accum)
     }
 }
 
 pub trait DoubleEndedIterator : Iterator {
     fn next_back(&mut self) -> Option<Self::Item> { unimplemented!() }
     
-    fn rfold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
+    fn rfold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
         where Self: Sized,
-              G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
+              G: FnMut(Acc, Self::Item) -> Result<Acc, E>
     {
         let mut accum = init;
-        while let Some(element) = self.next_back() {
-            match g(accum, element) {
-                FoldWhile::Continue(res) => accum = res,
-                done @ FoldWhile::Done(_) => return done,
-            }
+        while let Some(elt) = self.next_back() {
+            accum = g(accum, elt)?;
         }
-        FoldWhile::Continue(accum)
+        Ok(accum)
     }
 }
 ```
@@ -110,88 +104,56 @@ pub trait DoubleEndedIterator : Iterator {
 The control enum `FoldWhile` holds the value field inside both of its variants.
 This design means that the user can't accidentally forget to handle control flow.
 
-```rust
-/// An enum used for controlling the execution of `.fold_while()`.
-pub enum FoldWhile<T> {
-    /// Continue folding with this value
-    Continue(T),
-    /// Fold is complete and will return this value
-    Done(T),
-}
-
-impl<T> FoldWhile<T> {
-    /// Return the inner value.
-    pub fn into_inner(self) -> T {
-        match self {
-            FoldWhile::Continue(t) => t,
-            FoldWhile::Done(t) => t,
-        }
-    }
-}
-
-```
-
 
 + Iterator methods `all`, `any`, `find`, `position`, `fold` are all have their
-default implementation changed to use `fold_while`.
+default implementation changed to use `fold_ok`.
 
-+ Iterator method `rposition` changes its default implementation to use `rfold_while`.
++ Iterator method `rposition` changes its default implementation to use `rfold_ok`.
 
 + sum and product already use `fold`, and all the max and min functions should
   change their default implementations to use `fold`.
 
-+ The `Rev` adaptor changes its iterator methods to make use of `fold_while` and
-`rfold_while` on the base iterator when possible. This enables implementation
++ The `Rev` adaptor changes its iterator methods to make use of `fold_ok` and
+`rfold_ok` on the base iterator when possible. This enables implementation
 specific improvements to be reachable through the reversed iterator.
 
 + The `Iterator for &mut I` blanket implementation will gain a specialization
 for the `I: Sized` case (when that is possible) and it will forward
-the fold while methods, and will implement `fold` by calling `fold_while` on `I`.
-This makes an implementation specific `fold_while` reachable from `&mut I` even
+the fold while methods, and will implement `fold` by calling `fold_ok` on `I`.
+This makes an implementation specific `fold_ok` reachable from `&mut I` even
 when a specific `fold` was not (because `fold` uses a `self` receiver).
 
 + Iterator documentation will recommend providing a implementation specific
-`fold_while` and `rfold_while` in favor of any of the methods that use it
+`fold_ok` and `rfold_ok` in favor of any of the methods that use it
 (while of course not insisting on such implementations, most iterators don't
 need to implement them).
 
-+ The iterator adaptors will forward `fold_while` and `rfold_while` if
-applicable.
++ The iterator adaptors will forward `fold_ok` and `rfold_ok` if applicable.
 
 ## Example: Chain
 
-This is the implementation of `.fold_while` for `Chain`, which shows the need
+This is the implementation of `.fold_ok` for `Chain`, which shows the need
 for returning the `FoldWhile` enum for composability.
 
-```rust
-// helper macro for fold_while's control flow (internal use only)
-macro_rules! fold_while {
-    ($e:expr) => {
-        match $e {
-            FoldWhile::Continue(t) => t,
-            done @ FoldWhile::Done(_) => return done,
-        }
-    }
-}
-
-fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
-    where G: FnMut(Acc, Self::Item) -> FoldWhile<Acc>
+```
+fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
+    where G: FnMut(Acc, Self::Item) -> Result<Acc, E>
 {
     let mut accum = init;
     match self.state {
         ChainState::Both | ChainState::Front => {
-            accum = fold_while!(self.a.fold_while(accum, &mut g));
+            accum = self.a.fold_ok(accum, &mut g)?;
         }
         _ => { }
     }
     match self.state {
         ChainState::Both | ChainState::Back => {
             self.state = ChainState::Back;
-            accum = fold_while!(self.b.fold_while(accum, &mut g));
+            accum = self.b.fold_ok(accum, &mut g)?;
         }
         _ => { }
     }
-    FoldWhile::Continue(accum)
+    Ok(accum)
 }
 ```
 
@@ -199,7 +161,7 @@ fn fold_while<Acc, G>(&mut self, init: Acc, mut g: G) -> FoldWhile<Acc>
 
 [PR 37972][prslice] tunes the implementations of `Iterator::find` and similar
 methods for the slice iterators in particular. With this RFC, only the methods
-`fold_while` and `rfold_while` need to be implemented instead, and the benefit
+`fold_ok` and `rfold_ok` need to be implemented instead, and the benefit
 to `iter.find()` would also apply to `iter.rev().find()`.
 
 [prslice]: https://github.com/rust-lang/rust/pull/37972
@@ -207,8 +169,8 @@ to `iter.find()` would also apply to `iter.rev().find()`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- `fold_while` and `rfold_while` require threading the state correctly through
-  the iterator's parts.
+- `fold_ok` and `rfold_ok` require threading the state correctly through the
+iterator's parts.
 - Adding new methods to `Iterator` and `DoubleEndedIterator` will clash with
   other iterator extension traits that users may have.
 - `fold` is much simpler to implement because it consumes the iterator (`self`
@@ -237,37 +199,65 @@ to `iter.find()` would also apply to `iter.rev().find()`.
      broader benefits of access to improved versions through reversed
      iterators.
 
-## Use `Result<T, T>` instead of `FoldWhile<T>`
-
-Instead of introducing a new enum, `Result` can be used instead.
-
-- Drawback: Overloading the semantics of `Result` (it would use
-  `Ok` for “continue” and `Err` for “done”).
-- Drawback: Breaking for a successfully found element is signalled using `Err`.
-- Advantage: It can use existing `try!()` or `?` for control flow.
 
 ## Add three methods instead of two:
 
 Add `.rfold()`, the reverse version of `fold`. Gives `fold` benefits to `Rev<I>`.
-And add `search_while<Res, G>(&mut self, default: Res, g: G) ->
-SearchWhile<Res>` and corresponding `rsearch_while` method.  Control enum:
-`enum SearchWhile<T> { Done(T), Continue }`. Control flow is simpler.
+And add `find_map<X>(&mut self, |Self::Item| -> Option<X>) -> Option<X>`
+and corresponding `rfind_map` method.  Control flow is simpler.
 
-`find_map<X>(|Self::Item| -> Option<X>)` is another alternative way to formulate
-`search_while`.
 
 + Advantage: Each of the methods is simpler to implement
 + Drawback: it increases the implementation burden from one (two) methods to
-  two (four), going from `fold_while` (`rfold_while`) to `fold` and
-  `search_while` (`rfold`, `rsearch_while`).
+  two (four), going from `fold_ok` (`rfold_ok`) to `fold` and
+  `find_map` (`rfold`, `rfind_map`).
 + Advantage: You may want manual unrolling for searches (`find`), but a plain
   loop for unconditional `fold`
-+ Drawback: Losing `fold_while` loses a useful iterator method in itself.
++ Drawback: Losing `fold_ok` loses a useful iterator method in itself.
+
+
+## Use `FoldWhile<T>` instead of `Result`
+
+Use a more specific enum instead of `Result` and reformulate the method(s) to
+be `fold_while` and `rfold_while`.
+
+- Advantage: Avoid overloading the semantics of `Result` (it would use
+  `Ok` for “continue” and `Err` for “done”).
+- Advantage: Better semantic mapping to when the early exit case is the success
+  case.
+- Disadvantage: Need custom macro instead of `?` operator.
+
+```rust
+/// An enum used for controlling the execution of `.fold_while()`.
+pub enum FoldWhile<T> {
+    /// Continue folding with this value
+    Continue(T),
+    /// Fold is complete and will return this value
+    Done(T),
+}
+
+impl<T> FoldWhile<T> {
+    /// Return the inner value.
+    pub fn into_inner(self) -> T {
+        match self {
+            FoldWhile::Continue(t) => t,
+            FoldWhile::Done(t) => t,
+        }
+    }
+}
+
+// helper macro for fold_while's control flow (internal use only)
+macro_rules! fold_while {
+    ($e:expr) => {
+        match $e {
+            FoldWhile::Continue(t) => t,
+            done @ FoldWhile::Done(_) => return done,
+        }
+    }
+}
+
+```
+
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-- Do the benefits to reversed iterators (`Rev<I>`) materialize? Has not been
-  implemented yet.
-- Should the helper macro `fold_while!()` be public? Once macro namespacing
-  exists, I think it should be exported.
