@@ -91,7 +91,7 @@ pub trait Iterator {
 }
 
 pub trait DoubleEndedIterator : Iterator {
-    fn next_back(&mut self) -> Option<Self::Item> { unimplemented!() }
+    fn next_back(&mut self) -> Option<Self::Item>;
     
     fn rfold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
         where Self: Sized,
