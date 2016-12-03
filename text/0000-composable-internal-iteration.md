@@ -342,7 +342,7 @@ macro_rules! fold_while {
 ```
 
 
-# Unresolved questions
+# Unresolved Questions
 [unresolved]: #unresolved-questions
 
 - Are there any existing `fold_ok`, `rfold_ok` methods that extend `Iterator`
