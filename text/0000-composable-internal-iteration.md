@@ -57,7 +57,7 @@ once instead of for each of the searching and folding methods.
 
 ## Why Composable
 
-The fold while methods should be self-composable so that it is easy for
+The fold ok methods should be self-composable so that it is easy for
 composite iterators like `chain` and `flat_map` to use them.
 
 ## Why Reversible
@@ -128,7 +128,7 @@ specific improvements to be reachable through the reversed iterator.
 
 + The `Iterator for &mut I` blanket implementation will gain a specialization
 for the `I: Sized` case (when that is possible) and it will forward
-the fold while methods, and will implement `fold` by calling `fold_ok` on `I`.
+the fold ok methods, and will implement `fold` by calling `fold_ok` on `I`.
 This makes an implementation specific `fold_ok` reachable from `&mut I` even
 when a specific `fold` was not (because `fold` uses a `self` receiver).
 
@@ -275,7 +275,7 @@ impl<I> Iterator for Take<I>
   3. Strictly, `Iterator::all` already implements general internal iteration,
      but ownership rules make it very awkward to use for searching or folding
      with the result value in as a captured variable, it does not have the
-     rigid control flow of fold while, and it does not alone give us the
+     rigid control flow of `fold_ok`, and it does not alone give us the
      broader benefits of access to improved versions through reversed
      iterators.
 
