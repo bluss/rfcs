@@ -8,11 +8,12 @@
 # Summary
 [summary]: #summary
 
-Add the iterator method `fold_ok` that generalizes the existing methods
-`all`, `any`, `find`, `position` and `fold`. Iterators can provide one
-specific traversal implementation for all of them. Iterators can additionally
-implement `rfold_ok` to have the same search and fold methods improved
-through their reversed iterator as well.
+Add the iterator method `fold_ok` that exends `fold` to be fallible and
+short-cirtuiting. `fold_ok` generalizes the existing methods
+`all`, `any`, `find`, `position` and `fold`, and will be their new
+common base; iterators can provide one specific traversal implementation for
+all of them. Iterators can additionally implement `rfold_ok` to have the same
+search and fold methods improved through their reversed iterator as well.
 
 # Motivation
 [motivation]: #motivation
