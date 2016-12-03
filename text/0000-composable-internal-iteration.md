@@ -193,6 +193,7 @@ to `iter.find()` would also apply to `iter.rev().find()`.
 
 ## Example: Take
 
+How `Take` can implement `fold_ok`.
 
 ```rust
 pub struct Take<I> {
