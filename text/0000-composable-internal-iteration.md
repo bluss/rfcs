@@ -20,6 +20,7 @@ through their reversed iterator as well.
 *External* iteration has the consumer control when the next iterator element is
 consumed, and this is the usual Rust model based around the iterator's
 `.next()` method.
+
 *Internal* iteration inverts control and the iterator “pushes” the elements to
 the consumer. This is already used by the searching or folding iterator methods
 (`all` and the others).
@@ -27,9 +28,10 @@ the consumer. This is already used by the searching or folding iterator methods
 `fold_ok` and `rfold_ok` allow iterators to special case just one (or two)
 iterator methods, and having very many iterator methods gain from that by default.
 
-The existence of both forward and reverse methods mean that reversed iterators
-(the `Rev` adaptor) can use the improved implementations as well, so that
-`iter.rev().find()` can be as efficient as `iter.find()` is.
+## Why `fold_ok`
+
+`fold_ok` generalizes `fold` to add short-circuiting on error. This integrates
+with `Result` and the `?` operator.
 
 ## Why Internal Iteration
 
@@ -59,8 +61,9 @@ composite iterators like `chain` and `flat_map` to use them.
 
 ## Why Reversible
 
-Adding `rfold_ok` as the corresponding reverse method enables reversed iterators
-(`Rev` adaptor) to reach the iterator specific `fold_ok` and `rfold_ok` methods.
+The existence of both forward and reverse methods mean that reversed iterators
+(the `Rev` adaptor) can use the improved implementations as well, so that
+`iter.rev().find()` can be as efficient as `iter.find()` is.
 
 # Detailed design
 [design]: #detailed-design
@@ -106,17 +109,17 @@ pub trait DoubleEndedIterator : Iterator {
 }
 ```
 
-The control enum `FoldWhile` holds the value field inside both of its variants.
-This design means that the user can't accidentally forget to handle control flow.
 
++ `fold_ok` and `rfold_ok` use a `&mut self` receiver because they don’t
+necessarily consume the iterator fully.
 
 + Iterator methods `all`, `any`, `find`, `position`, `fold` are all have their
 default implementation changed to use `fold_ok`.
 
 + Iterator method `rposition` changes its default implementation to use `rfold_ok`.
 
-+ sum and product already use `fold`, and all the max and min functions should
-  change their default implementations to use `fold`.
++ sum and product already use `fold`; the max and min methods should change
+  their default implementations to use `fold`.
 
 + The `Rev` adaptor changes its iterator methods to make use of `fold_ok` and
 `rfold_ok` on the base iterator when possible. This enables implementation
@@ -130,15 +133,15 @@ when a specific `fold` was not (because `fold` uses a `self` receiver).
 
 + Iterator documentation will recommend providing a implementation specific
 `fold_ok` and `rfold_ok` in favor of any of the methods that use it
-(while of course not insisting on such implementations, most iterators don't
-need to implement them).
+(while of course not insisting on implementations, most iterators don't need to
+implement them).
 
 + The iterator adaptors will forward `fold_ok` and `rfold_ok` if applicable.
 
 ## Example: Chain
 
-This is the implementation of `.fold_ok` for `Chain`, which shows the need
-for returning the `FoldWhile` enum for composability.
+This is the implementation of `.fold_ok` for `Chain`, which shows composability:
+it is possible to apply `fold_ok` recursively.
 
 ```rust
 fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
@@ -247,7 +250,7 @@ impl<I> Iterator for Take<I>
 [drawbacks]: #drawbacks
 
 - `fold_ok` and `rfold_ok` require threading the state correctly through the
-iterator's parts.
+  iterator's parts.
 - Adding new methods to `Iterator` and `DoubleEndedIterator` will clash with
   other iterator extension traits that users may have.
 - `fold` is much simpler to implement because it consumes the iterator (`self`
@@ -304,6 +307,9 @@ be `fold_while` and `rfold_while`.
   case.
 - Disadvantage: Need custom macro instead of `?` operator.
 
+The control enum `FoldWhile` holds the value field inside both of its variants.
+This design means that the user can't accidentally forget to handle control flow.
+
 ```rust
 /// An enum used for controlling the execution of `.fold_while()`.
 pub enum FoldWhile<T> {
@@ -338,3 +344,6 @@ macro_rules! fold_while {
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
+
+- Are there any existing `fold_ok`, `rfold_ok` methods that extend `Iterator`
+  in the common Rust ecosystem?
