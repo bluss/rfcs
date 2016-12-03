@@ -114,7 +114,7 @@ pub trait DoubleEndedIterator : Iterator {
 + `fold_ok` and `rfold_ok` use a `&mut self` receiver because they don’t
 necessarily consume the iterator fully.
 
-+ Iterator methods `all`, `any`, `find`, `position`, `fold` are all have their
++ Iterator methods `all`, `any`, `find`, `position`, and `fold` have their
 default implementation changed to use `fold_ok`.
 
 + Iterator method `rposition` changes its default implementation to use `rfold_ok`.
