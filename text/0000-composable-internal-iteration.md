@@ -9,7 +9,7 @@
 [summary]: #summary
 
 Add the iterator method `fold_ok` that exends `fold` to be fallible and
-short-cirtuiting. `fold_ok` generalizes the existing methods
+short-circuiting. `fold_ok` generalizes the existing methods
 `all`, `any`, `find`, `position` and `fold`, and will be their new
 common base; iterators can provide one specific traversal implementation for
 all of them. Iterators can additionally implement `rfold_ok` to have the same
