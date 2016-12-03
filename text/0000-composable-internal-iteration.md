@@ -221,27 +221,26 @@ impl<I> Iterator for Take<I>
         where G: FnMut(Acc, Self::Item) -> Result<Acc, E>
     {
         if self.n == 0 {
-            Ok(init)
-        } else {
-            let n = &mut self.n;
-            let result = self.iter.fold_ok(init, move |acc, elt| {
-                *n -= 1;
-                match g(acc, elt) {
-                    Err(e) => Err(TakeStop::Their(e)),
-                    Ok(x) => {
-                        if *n == 0 {
-                            Err(TakeStop::Our(x))
-                        } else {
-                            Ok(x)
-                        }
+            return Ok(init);
+        }
+        let n = &mut self.n;
+        let result = self.iter.fold_ok(init, move |acc, elt| {
+            *n -= 1;
+            match g(acc, elt) {
+                Err(e) => Err(TakeStop::Their(e)),
+                Ok(x) => {
+                    if *n == 0 {
+                        Err(TakeStop::Our(x))
+                    } else {
+                        Ok(x)
                     }
                 }
-            });
-            match result {
-                Err(TakeStop::Their(e)) => Err(e),
-                Err(TakeStop::Our(x)) => Ok(x),
-                Ok(x) => Ok(x)
             }
+        });
+        match result {
+            Err(TakeStop::Their(e)) => Err(e),
+            Err(TakeStop::Our(x)) => Ok(x),
+            Ok(x) => Ok(x)
         }
     }
 }
