@@ -57,6 +57,11 @@ once instead of for each of the searching and folding methods.
 The fold while methods should be self-composable so that it is easy for
 composite iterators like `chain` and `flat_map` to use them.
 
+## Why Reversible
+
+Adding `rfold_ok` as the corresponding reverse method enables reversed iterators
+(`Rev` adaptor) to reach the iterator specific `fold_ok` and `rfold_ok` methods.
+
 # Detailed design
 [design]: #detailed-design
 
@@ -135,7 +140,7 @@ need to implement them).
 This is the implementation of `.fold_ok` for `Chain`, which shows the need
 for returning the `FoldWhile` enum for composability.
 
-```
+```rust
 fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
     where G: FnMut(Acc, Self::Item) -> Result<Acc, E>
 {
@@ -165,6 +170,57 @@ methods for the slice iterators in particular. With this RFC, only the methods
 to `iter.find()` would also apply to `iter.rev().find()`.
 
 [prslice]: https://github.com/rust-lang/rust/pull/37972
+
+## Example: Take Adaptor
+
+
+```rust
+pub struct Take<I> {
+    n: usize,
+    iter: I,
+}
+
+// Stopping reason in fold_ok
+enum TakeStop<L, R> {
+    Their(L),
+    Our(R),
+}
+
+impl<I> Iterator for Take<I>
+    where I: Iterator
+{
+    type Item = I::Item;
+    fn next(&mut self) -> Option<Self::Item> { unimplemented!() }
+
+    fn fold_ok<Acc, E, G>(&mut self, init: Acc, mut g: G) -> Result<Acc, E>
+        where G: FnMut(Acc, Self::Item) -> Result<Acc, E>
+    {
+        if self.n == 0 {
+            Ok(init)
+        } else {
+            let n = &mut self.n;
+            let result = self.iter.fold_ok(init, move |acc, elt| {
+                *n -= 1;
+                match g(acc, elt) {
+                    Err(e) => Err(TakeStop::Their(e)),
+                    Ok(x) => {
+                        if *n == 0 {
+                            Err(TakeStop::Our(x))
+                        } else {
+                            Ok(x)
+                        }
+                    }
+                }
+            });
+            match result {
+                Err(TakeStop::Their(e)) => Err(e),
+                Err(TakeStop::Our(x)) => Ok(x),
+                Ok(x) => Ok(x)
+            }
+        }
+    }
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
