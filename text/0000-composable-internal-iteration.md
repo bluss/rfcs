@@ -341,6 +341,25 @@ macro_rules! fold_while {
 
 ```
 
+## Integrate with `Carrier`
+
+`fold_ok` can be written in terms of the carrier trait instead of `Result`; the
+provided implementation of the method would be (with the current form of
+`Carrier`):
+
+```rust
+fn fold_ok<C, G>(&mut self, init: C::Success, mut g: G) -> C
+    where Self: Sized,
+          G: FnMut(C::Success, Self::Item) -> C,
+          C: Carrier,
+{
+    let mut accum = init;
+    while let Some(elt) = self.next() {
+        accum = g(accum, elt)?;
+    }
+    C::from_success(accum)
+}
+```
 
 # Unresolved Questions
 [unresolved]: #unresolved-questions
