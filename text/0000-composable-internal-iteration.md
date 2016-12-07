@@ -246,6 +246,18 @@ impl<I> Iterator for Take<I>
 }
 ```
 
+# How We Teach This
+[how-we-teach-this]: #how-we-teach-this
+
+`fold_ok` and `rfold_ok` are an advanced topic in iterator methods, but should
+be understood as chaining a sequence of `Result`-returning operations, so
+it can be taught to users that have learned error handling using `?`.
+
+Iterator documentation should be extended to recommend `Iterator` implementors
+implement `fold_ok` (and `rfold_ok` if applicable) in preference over
+special casing `all, any, fold` or any of the other iterator methods that
+depend on them.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
